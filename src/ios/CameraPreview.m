@@ -5,6 +5,9 @@
 
 #import "CameraPreview.h"
 
+static int nim = 0;
+static NSString* prevtempFile;
+
 @implementation CameraPreview
 
 - (void) startCamera:(CDVInvokedUrlCommand*)command {
@@ -270,7 +273,31 @@
                          }
 
                          // task 1
+
+                         //previewPicturePath = [assetURL absoluteString];
                          dispatch_group_enter(group);
+                         char buf[100];
+                         sprintf(buf,"foo%d.jpg", nim++);
+
+                         if (nim > 0)
+                           [[NSFileManager defaultManager] removeItemAtPath:prevtempFile error:NULL];
+                         
+                         NSString *nsbuf = [[NSString alloc] initWithCString:buf
+                                                                    encoding:NSASCIIStringEncoding];
+
+                         NSString* tempPath = NSTemporaryDirectory();
+                         NSString* tempFile = [tempPath stringByAppendingPathComponent:nsbuf];
+                         prevtempFile = tempFile;
+
+                         NSURL* URL = [NSURL fileURLWithPath:tempFile];
+                         [UIImageJPEGRepresentation(capturedImage, 1.0) writeToFile:tempFile atomically:YES];
+                         previewPicturePath = [URL absoluteString];
+                         originalPicturePath = [URL absoluteString];
+                         NSLog(@"previewPicturePath: %@", previewPicturePath);
+
+                         dispatch_group_leave(group);
+
+#if 0
                          [library writeImageToSavedPhotosAlbum:previewImage orientation:ALAssetOrientationUp completionBlock:^(NSURL *assetURL, NSError *error) {
                                   if (error) {
                                           NSLog(@"FAILED to save Preview picture.");
@@ -294,6 +321,7 @@
                                   }
                                   dispatch_group_leave(group);
                           }];
+#endif
 
                          dispatch_group_notify(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
                                 NSMutableArray *params = [[NSMutableArray alloc] init];
